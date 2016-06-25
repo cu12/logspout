@@ -107,7 +107,7 @@ func (p *LogsPump) Run() error {
 		p.pumpLogs(&docker.APIEvents{
 			ID:     normalID(listing.ID),
 			Status: "start",
-		}, false)
+		})
 	}
 	events := make(chan *docker.APIEvents)
 	err = p.client.AddEventListener(events)
@@ -118,7 +118,7 @@ func (p *LogsPump) Run() error {
 		debug("pump.Run() event:", normalID(event.ID), event.Status)
 		switch event.Status {
 		case "start", "restart":
-			go p.pumpLogs(event, true)
+			go p.pumpLogs(event)
 		case "rename":
 			go p.rename(event)
 		case "die":
@@ -128,7 +128,7 @@ func (p *LogsPump) Run() error {
 	return errors.New("docker event stream closed")
 }
 
-func (p *LogsPump) pumpLogs(event *docker.APIEvents, backlog bool) {
+func (p *LogsPump) pumpLogs(event *docker.APIEvents) {
 	id := normalID(event.ID)
 	container, err := p.client.InspectContainer(id)
 	assert(err, "pump")
@@ -140,12 +140,7 @@ func (p *LogsPump) pumpLogs(event *docker.APIEvents, backlog bool) {
 		debug("pump.pumpLogs():", id, "ignored: environ ignore")
 		return
 	}
-	var tail string
-	if backlog {
-		tail = "all"
-	} else {
-		tail = "0"
-	}
+
 	outrd, outwr := io.Pipe()
 	errrd, errwr := io.Pipe()
 	p.mu.Lock()
@@ -161,7 +156,8 @@ func (p *LogsPump) pumpLogs(event *docker.APIEvents, backlog bool) {
 			Stdout:       true,
 			Stderr:       true,
 			Follow:       true,
-			Tail:         tail,
+			Tail:         "all",
+			Since:        event.Time,
 		})
 		if err != nil {
 			debug("pump.pumpLogs():", id, "stopped:", err)
