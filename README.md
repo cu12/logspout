@@ -79,6 +79,52 @@ Routes are stored on disk, so by default routes are ephemeral. You can mount a v
 
 See [routesapi module](http://github.com/gliderlabs/logspout/blob/master/routesapi) for all options.
 
+#### Custom CA for TLS transport
+
+You can tell logspout to use your custom CA certificate by simply mounting your directory with certificates to /mnt/ca/:
+
+	$ docker run -d \
+		--name logspout \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /path/to/ca/dir/:/mnt/ca/ \
+		gliderlabs/logspout \
+		tls://logs.my.server.com
+
+You can set custom CA certificate directory by adding CA_PATH env:
+
+	$ docker run -d \
+		--name logspout \
+		-e "CA_PATH=/data/ca/" \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /path/to/ca/dir/:/data/ca/ \
+		gliderlabs/logspout \
+		tls://logs.my.server.com
+
+#### Custom client certificates for TLS transport
+
+You can tell logspout to use your custom client certificate by simply mounting your directory with certificate and key to /mnt/cert/:
+
+	$ docker run -d \
+		--name logspout \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /path/to/cert/dir/:/mnt/cert/ \
+		gliderlabs/logspout \
+		tls://logs.my.server.com
+
+Logspout will automatically load certificates with file extensions crt and cert, keys with .key extension.
+
+Example: user.cert, user.key
+
+You can set custom client certificate directory by adding CERT_PATH env:
+
+	$ docker run -d \
+		--name logspout \
+		-e "CERT_PATH=/data/cert/" \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /path/to/cert/dir/:/data/cert/ \
+		gliderlabs/logspout \
+		tls://logs.my.server.com
+
 ## Modules
 
 The standard distribution of logspout comes with all modules defined in this repository. You can remove or add new modules with custom builds of logspout. Just edit the `modules.go` file and do a `docker build`.
